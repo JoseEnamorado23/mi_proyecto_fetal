@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predicción FGR - Todos los Campos</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style_FI.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+        <link rel="icon" href="{{ url_for('static', filename='image/predicciones.png') }}" type="image/x-icon">
+
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Predicción de Restricción del Crecimiento Fetal</h1>
+            <p class="subtitle">Complete todos los campos según los datos médicos disponibles</p>
+
+            {% if resultado %}
+                <div class="alert {{ 'alert-danger' if resultado.prediccion == 1 else 'alert-success' }}">
+                    {{ 'Riesgo de FGR detectado' if resultado.prediccion == 1 else 'No existe riesgo de FGR' }}<br>
+                    <strong>Modelo utilizado:</strong> {{ resultado.modelo | title }}
+                </div>
+            {% endif %}
+        </div>    
+
+        <form action="/predecir" method="post" class="prediction-form">
+            <!-- Sección 1: Datos Demográficos y Básicos -->
+            <div class="form-section">
+                <h3><i class="fas fa-user"></i> Datos Demográficos</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dato1">1. Edad de la madre (años)</label>
+                        <input id="dato1" type="number" name="dato1" min="18" max="45" required value="{{ request.form.dato1 if request.form.dato1 else '' }}">
+                        <small class="range-info">Rango: 18-45 años</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="dato2">2. IMC de la madre</label>
+                        <input id="dato2" type="number" step="0.1" name="dato2" min="18" max="38" required value="{{ request.form.dato2 if request.form.dato2 else '' }}">
+                        <small class="range-info">Rango: 18.0-38.0</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección 2: Datos del Embarazo -->
+            <div class="form-section">
+                <h3><i class="fas fa-baby"></i> Datos del Embarazo</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dato3">3. Edad gestacional al parto (semanas)</label>
+                        <input id="dato3" type="number" step="0.1" name="dato3" min="25" max="40" required value="{{ request.form.dato3 if request.form.dato3 else '' }}">
+                        <small class="range-info">Rango: 25.0-40.0 semanas</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="dato4">4. Número de embarazos (Gravidez)</label>
+                        <input id="dato4" type="number" name="dato4" min="1" max="10" required value="{{ request.form.dato4 if request.form.dato4 else '' }}">
+                        <small class="range-info">Rango: 1-10</small>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dato5">5. Número de partos previos (Paridad)</label>
+                        <input id="dato5" type="number" name="dato5" min="0" max="6" required value="{{ request.form.dato5 if request.form.dato5 else '' }}">
+                        <small class="range-info">Rango: 0-6</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="dato6">6. Síntoma inicial (0=edema, 1=hipertensión, 2=FGR)</label>
+                        <input id="dato6" type="number" name="dato6" min="0" max="2" required value="{{ request.form.dato6 if request.form.dato6 else '' }}">
+                        <small class="range-info">Valores: 0, 1 o 2</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección 3: Edad Gestacional e Intervalos -->
+            <div class="form-section">
+                <h3><i class="fas fa-calendar-alt"></i> Edad Gestacional e Intervalos</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dato7">7. Edad gestacional inicio síntomas (semanas)</label>
+                        <input id="dato7" type="number" step="0.1" name="dato7" min="18" max="39" required value="{{ request.form.dato7 if request.form.dato7 else '' }}">
+                        <small class="range-info">Rango: 18.0-39.0 semanas</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="dato8">8. Días desde síntomas hasta parto</label>
+                        <input id="dato8" type="number" name="dato8" min="1" max="83" required value="{{ request.form.dato8 if request.form.dato8 else '' }}">
+                        <small class="range-info">Rango: 1-83 días</small>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dato9">9. Edad gestacional inicio hipertensión (semanas)</label>
+                        <input id="dato9" type="number" step="0.1" name="dato9" min="20" max="39" required value="{{ request.form.dato9 if request.form.dato9 else '' }}">
+                        <small class="range-info">Rango: 20.0-39.0 semanas</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="dato10">10. Días desde hipertensión hasta parto</label>
+                        <input id="dato10" type="number" name="dato10" min="1" max="70" required value="{{ request.form.dato10 if request.form.dato10 else '' }}">
+                        <small class="range-info">Rango: 1-70 días</small>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dato11">11. Edad gestacional inicio edema (semanas)</label>
+                        <input id="dato11" type="number" step="0.1" name="dato11" min="19" max="38" required value="{{ request.form.dato11 if request.form.dato11 else '' }}">
+                        <small class="range-info">Rango: 19.0-38.0 semanas</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="dato12">12. Días desde edema hasta parto</label>
+                        <input id="dato12" type="number" name="dato12" min="1" max="70" required value="{{ request.form.dato12 if request.form.dato12 else '' }}">
+                        <small class="range-info">Rango: 1-70 días</small>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dato13">13. Edad gestacional inicio proteinuria (semanas)</label>
+                        <input id="dato13" type="number" step="0.1" name="dato13" min="20" max="39" required value="{{ request.form.dato13 if request.form.dato13 else '' }}">
+                        <small class="range-info">Rango: 20.0-39.0 semanas</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="dato14">14. Días desde proteinuria hasta parto</label>
+                        <input id="dato14" type="number" name="dato14" min="1" max="70" required value="{{ request.form.dato14 if request.form.dato14 else '' }}">
+                        <small class="range-info">Rango: 1-70 días</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección 4: Tratamiento y Antecedentes -->
+            <div class="form-section">
+                <h3><i class="fas fa-medkit"></i> Tratamiento y Antecedentes</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dato15">15. Tratamiento expectante (días)</label>
+                        <input id="dato15" type="number" name="dato15" min="1" max="70" required value="{{ request.form.dato15 if request.form.dato15 else '' }}">
+                        <small class="range-info">Rango: 1-70 días</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="dato16">16. Terapia antihipertensiva antes hospitalización (0=No, 1=Sí)</label>
+                        <input id="dato16" type="number" name="dato16" min="0" max="1" required value="{{ request.form.dato16 if request.form.dato16 else '' }}">
+                        <small class="range-info">Valores: 0 o 1</small>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dato17">17. Antecedentes (0=Ninguno, 1=Hipertensión, 2=SOP)</label>
+                        <input id="dato17" type="number" name="dato17" min="0" max="2" required value="{{ request.form.dato17 if request.form.dato17 else '' }}">
+                        <small class="range-info">Valores: 0, 1 o 2</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección 5: Signos Vitales -->
+            <div class="form-section">
+                <h3><i class="fas fa-heartbeat"></i> Signos Vitales</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dato18">18. Presión arterial sistólica máxima (mmHg)</label>
+                        <input id="dato18" type="number" name="dato18" min="100" max="230" required value="{{ request.form.dato18 if request.form.dato18 else '' }}">
+                        <small class="range-info">Rango: 100-230 mmHg</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="dato19">19. Presión arterial diastólica máxima (mmHg)</label>
+                        <input id="dato19" type="number" name="dato19" min="60" max="130" required value="{{ request.form.dato19 if request.form.dato19 else '' }}">
+                        <small class="range-info">Rango: 60-130 mmHg</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección 6: Razones y Modo de Parto -->
+            <div class="form-section">
+                <h3><i class="fas fa-baby-carriage"></i> Parto</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dato20">20. Razones para parto (0-5)</label>
+                        <input id="dato20" type="number" name="dato20" min="0" max="5" required value="{{ request.form.dato20 if request.form.dato20 else '' }}">
+                        <small class="range-info">Rango: 0-5</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="dato21">21. Modo de parto (0=Cesárea, 1=Vaginal)</label>
+                        <input id="dato21" type="number" name="dato21" min="0" max="1" required value="{{ request.form.dato21 if request.form.dato21 else '' }}">
+                        <small class="range-info">Valores: 0 o 1</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección 7: Datos de Laboratorio -->
+            <div class="form-section">
+                <h3><i class="fas fa-flask"></i> Datos de Laboratorio</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dato22">22. BNP máximo (pg/mL)</label>
+                        <input id="dato22" type="number" name="dato22" min="100" max="10000" required value="{{ request.form.dato22 if request.form.dato22 else '' }}">
+                        <small class="range-info">Rango: 100-10,000 pg/mL</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="dato23">23. Creatinina máxima (mg/dL)</label>
+                        <input id="dato23" type="number" step="0.1" name="dato23" min="10" max="110" required value="{{ request.form.dato23 if request.form.dato23 else '' }}">
+                        <small class="range-info">Rango: 10-110 mg/dL</small>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dato24">24. Ácido úrico máximo (mg/dL)</label>
+                        <input id="dato24" type="number" step="0.1" name="dato24" min="200" max="700" required value="{{ request.form.dato24 if request.form.dato24 else '' }}">
+                        <small class="range-info">Rango: 200-700 mg/dL</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="dato25">25. Proteinuria máxima (mg/24h)</label>
+                        <input id="dato25" type="number" name="dato25" min="100" max="15000" required value="{{ request.form.dato25 if request.form.dato25 else '' }}">
+                        <small class="range-info">Rango: 100-15,000 mg/24h</small>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dato26">26. Proteína total máxima (g/dL)</label>
+                        <input id="dato26" type="number" step="0.1" name="dato26" min="35" max="65" required value="{{ request.form.dato26 if request.form.dato26 else '' }}">
+                        <small class="range-info">Rango: 35-65 g/dL</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="dato27">27. Albúmina máxima (g/dL)</label>
+                        <input id="dato27" type="number" step="0.1" name="dato27" min="15" max="40" required value="{{ request.form.dato27 if request.form.dato27 else '' }}">
+                        <small class="range-info">Rango: 15-40 g/dL</small>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dato28">28. ALT máxima (U/L)</label>
+                        <input id="dato28" type="number" name="dato28" min="5" max="250" required value="{{ request.form.dato28 if request.form.dato28 else '' }}">
+                        <small class="range-info">Rango: 5-250 U/L</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="dato29">29. AST máxima (U/L)</label>
+                        <input id="dato29" type="number" name="dato29" min="5" max="300" required value="{{ request.form.dato29 if request.form.dato29 else '' }}">
+                        <small class="range-info">Rango: 5-300 U/L</small>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dato30">30. Plaquetas mínimas (x10³/µL)</label>
+                        <input id="dato30" type="number" name="dato30" min="30" max="450" required value="{{ request.form.dato30 if request.form.dato30 else '' }}">
+                        <small class="range-info">Rango: 30-450 x10³/µL</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección 8: Selección de Modelo -->
+            <div class="form-section">
+                <h3><i class="fas fa-brain"></i> Modelo Predictivo</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="modelo">Seleccione el modelo de predicción:</label>
+                        <select id="modelo" name="modelo" required>
+                            <option value="" disabled selected>-- Seleccione --</option>
+                            <option value="logistica">Regresión Logística</option>
+                            <option value="mlp">Red Neuronal</option>
+                            <option value="fcm">Mapa Cognitivo Difuso</option>
+                            <option value="svm">Máquina de Soporte Vectorial</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-actions">
+    <button type="submit" class="btn-predict">
+        <i class='bx bx-calculator'></i> Calcular Predicción
+    </button>
+    <button type="reset" class="btn-reset">
+        <i class='bx bx-eraser'></i> Limpiar Formulario
+    </button>
+    <a href="/" class="btn-home">
+        <i class='bx bx-home'></i>
+    </a>
+</div>
+        </form>
+    </div>
+</body>
+</form>
+        </div>
+    </div>
+
+    <!-- Font Awesome para iconos -->
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</body>
+</html>
+
+

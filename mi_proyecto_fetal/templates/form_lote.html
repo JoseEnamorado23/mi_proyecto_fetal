@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predicción por Lotes</title>
+        <link rel="icon" href="{{ url_for('static', filename='image/predicciones.png') }}" type="image/x-icon">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style_FI.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+        <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-file-import"></i> Predicción por Lote</h1>
+            <p class="subtitle">Cargue un archivo con múltiples registros para realizar predicciones</p>
+        </div>
+
+        <form action="/evaluar" method="post" enctype="multipart/form-data" class="prediction-form" id="predictionForm" data-file-loaded="{{ 'true' if archivo_nombre else 'false' }}">
+            <div class="form-section">
+                <h3><i class="fas fa-file-excel"></i> Selección de Archivo</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="archivo">Seleccione o arrastre archivo (.xlsx, .xls, .csv)</label>
+                        <div class="file-input-container dropzone" id="dropzone">
+                            <input type="file" id="archivo" name="archivo" accept=".xlsx,.xls,.csv" required>
+                            <label for="archivo" class="file-input-label">
+                                <i class="fas fa-cloud-upload-alt"></i> 
+                                <span class="drag-text">Arrastre y suelte archivo aquí o haga clic para seleccionar</span>
+                            </label>
+                            <div class="file-info">
+                                <p id="file-name" class="file-name">Ningún archivo seleccionado</p>
+                                <p id="file-size" class="file-size"></p>
+                            </div>
+                            <div class="progress-container" id="progressContainer">
+                                <div class="progress-bar" id="progressBar"></div>
+                                <span class="progress-text" id="progressText">0%</span>
+                            </div>
+                        </div>
+                        <p class="file-hint">Formatos soportados: .xlsx, .xls, .csv. Tamaño máximo: 5MB</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3><i class="fas fa-brain"></i> Modelo Predictivo</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="modelo">Seleccione el modelo de predicción:</label>
+                        <select id="modelo" name="modelo" required>
+                            <option value="" disabled selected>-- Seleccione --</option>
+                            <option value="logistica">Regresión Logística</option>
+                            <option value="mlp">Red Neuronal</option>
+                            <option value="svm">Máquina de Soporte Vectorial</option>
+                            <option value="fcm">Mapa Cognitivo Difuso</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn-predict" id="submitBtn">
+                    <i class="fas fa-calculator"></i> Procesar Lote
+                </button>
+            </div>
+        </form>
+
+        {% if resultados %}
+        <div class="results-container animate__animated animate__fadeIn">
+            <div class="results-header">
+                <h2><i class="fas fa-chart-bar"></i> Resultados del Análisis</h2>
+                <div class="model-info">
+                    <span class="model-badge">{{ modelo_nombre }}</span>
+                </div>
+            </div>
+
+            <div class="results-message results-success">
+                <i class="fas fa-check-circle"></i> 
+                <div>
+                    <strong>Procesamiento completado exitosamente</strong>
+                    <p>Archivo analizado: {{ archivo_nombre }}</p>
+                </div>
+            </div>
+
+            <div class="results-grid">
+                <div class="metrics-card">
+                    <h3><i class="fas fa-tachometer-alt"></i> Métricas Principales</h3>
+                    <div class="metrics-grid">
+                        <div class="metric-item">
+                            <div class="metric-value">{{ "%.2f"|format(accuracy*100) }}%</div>
+                            <div class="metric-label">Exactitud</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value">{{ "%.2f"|format(precision*100) }}%</div>
+                            <div class="metric-label">Precisión</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value">{{ "%.2f"|format(recall*100) }}%</div>
+                            <div class="metric-label">Sensibilidad</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value">{{ "%.2f"|format(f1*100) }}%</div>
+                            <div class="metric-label">Puntaje F1</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="interpretation-card">
+                    <h3><i class="fas fa-lightbulb"></i> Interpretación</h3>
+                    <div class="interpretation-content">
+                        {% if accuracy > 0.85 %}
+                        <p class="positive">✅ El modelo tiene un <strong>alto rendimiento</strong> en la clasificación de los datos.</p>
+                        {% elif accuracy > 0.7 %}
+                        <p class="neutral">⚠️ El modelo tiene un <strong>rendimiento moderado</strong>, considere probar otros algoritmos.</p>
+                        {% else %}
+                        <p class="negative">❌ El modelo tiene un <strong>rendimiento bajo</strong>, revise los datos o pruebe otro algoritmo.</p>
+                        {% endif %}
+                        
+                        {% if precision > recall %}
+                        <p>📊 El modelo es <strong>más preciso que sensible</strong>, comete menos falsos positivos.</p>
+                        {% else %}
+                        <p>📊 El modelo es <strong>más sensible que preciso</strong>, detecta mejor los casos positivos.</p>
+                        {% endif %}
+                        
+                        <p>📈 Para mejorar resultados: verifique calidad de datos, balance de clases y parámetros del modelo.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="results-section">
+                <h3><i class="fas fa-project-diagram"></i> Matriz de Confusión</h3>
+                <div class="confusion-matrix-container">
+                    <img src="{{ url_for('static', filename='confusion_matrix.png') }}" alt="Matriz de Confusión" class="confusion-matrix">
+                    <div class="matrix-legend">
+                        <div class="legend-item">
+                            <span class="legend-color true-neg"></span>
+                            <span>Verdaderos Negativos: {{ cm[0][0] }}</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color false-pos"></span>
+                            <span>Falsos Positivos: {{ cm[0][1] }}</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color false-neg"></span>
+                            <span>Falsos Negativos: {{ cm[1][0] }}</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color true-pos"></span>
+                            <span>Verdaderos Positivos: {{ cm[1][1] }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="results-section">
+                <h3><i class="fas fa-table"></i> Reporte de Clasificación</h3>
+                <div class="classification-report">
+                    <pre>{{ classification_report }}</pre>
+                </div>
+            </div>
+
+            <div class="results-actions">
+     
+                <button class="btn-new-analysis">
+                    <i class="fas fa-redo"></i> Nuevo Análisis
+                </button>
+
+                <a href="/" class="btn-home">
+                    <i class='bx bx-home'></i>
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Modal de Error -->
+        <div class="modal" id="errorModal">
+            <div class="modal-content">
+                <div class="modal-header error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>Error en el Archivo</h3>
+                    <span class="close-modal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <p id="errorMessage">El archivo seleccionado no es válido. Por favor, suba un archivo .xlsx, .xls o .csv con el formato correcto.</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-ok">Entendido</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="loading-content">
+                <div class="spinner"></div>
+                <p>Procesando archivo, por favor espere...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Drag and drop functionality
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('archivo');
+        const fileName = document.getElementById('file-name');
+        const fileSize = document.getElementById('file-size');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const submitBtn = document.getElementById('submitBtn');
+        const errorModal = document.getElementById('errorModal');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        // Highlight drop zone when item is dragged over it
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            dropzone.classList.add('highlight');
+        }
+        
+        function unhighlight() {
+            dropzone.classList.remove('highlight');
+        }
+        
+        // Handle dropped files
+        dropzone.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length) {
+                fileInput.files = files;
+                updateFileInfo(files[0]);
+            }
+        }
+        
+        // Handle selected files
+        fileInput.addEventListener('change', function() {
+            if (this.files.length) {
+                updateFileInfo(this.files[0]);
+            }
+        });
+        
+        function updateFileInfo(file) {
+            // Validate file type
+            const validTypes = ['application/vnd.ms-excel', 
+                               'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 
+                               'text/csv'];
+            
+            if (!validTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls|csv)$/)) {
+                showError('Tipo de archivo no válido. Por favor suba un archivo Excel (.xlsx, .xls) o CSV.');
+                return;
+            }
+            
+            // Validate file size (5MB max)
+            if (file.size > 5 * 1024 * 1024) {
+                showError('El archivo es demasiado grande. El tamaño máximo permitido es 5MB.');
+                return;
+            }
+            
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i]);
+        }
+        
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            errorModal.style.display = 'block';
+            fileInput.value = '';
+            fileName.textContent = 'Ningún archivo seleccionado';
+            fileSize.textContent = '';
+        }
+        
+        // Close modal
+        document.querySelector('.close-modal').addEventListener('click', function() {
+            errorModal.style.display = 'none';
+        });
+        
+        document.querySelector('.btn-ok').addEventListener('click', function() {
+            errorModal.style.display = 'none';
+        });
+
+        document.getElementById('predictionForm').addEventListener('submit', function(e) {
+    const form = this;
+    const hasFileLoaded = form.dataset.fileLoaded === 'true';
+    
+    if (!fileInput.files.length && !hasFileLoaded) {
+        e.preventDefault();
+        showError('Por favor seleccione un archivo antes de continuar.');
+        return;
+    }
+    
+    loadingOverlay.style.display = 'flex';
+    
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += Math.random() * 10;
+        if (progress > 90) clearInterval(interval);
+        progressBar.style.width = `${progress}%`;
+        progressText.textContent = `${Math.round(progress)}%`;
+    }, 300);
+});
+        
+        // Form submission
+        document.getElementById('predictionForm').addEventListener('submit', function(e) {
+            if (!fileInput.files.length) {
+                e.preventDefault();
+                showError('Por favor seleccione un archivo antes de continuar.');
+                return;
+            }
+            
+            // Show loading spinner
+            loadingOverlay.style.display = 'flex';
+            
+            // Simulate progress (remove this in production)
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 10;
+                if (progress > 90) clearInterval(interval);
+                progressBar.style.width = `${progress}%`;
+                progressText.textContent = `${Math.round(progress)}%`;
+            }, 300);
+        });
+        
+        // New analysis button
+        if (document.querySelector('.btn-new-analysis')) {
+            document.querySelector('.btn-new-analysis').addEventListener('click', function() {
+                window.location.reload();
+            });
+        }
+    </script>
+</body>
+</html>

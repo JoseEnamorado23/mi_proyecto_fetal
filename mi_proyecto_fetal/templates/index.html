@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Predicción</title>
+    <link rel="icon" href="{{ url_for('static', filename='image/predicciones.png') }}" type="image/x-icon">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style_index.css') }}">
+</head>
+<body>
+
+    <header>
+        <h1>
+            <img src="{{ url_for('static', filename='image/icono1.svg') }}" alt="Ícono" style="width: 90px; vertical-align: middle; margin-right: 10px;">
+            Fetal weight prediction
+        </h1>
+    </header>
+
+    <div class="intro">
+        Bienvenido al sistema de predicción de peso fetal. Esta herramienta utiliza modelos de aprendizaje automático para estimar condiciones relacionadas con el embarazo a partir de variables clínicas y biométricas. Puedes ingresar datos de forma individual o cargar un archivo con múltiples registros.
+    </div>
+
+    <div class="options">
+        <div class="card">
+            <h3>Predicción individual</h3>
+            <p>Introduce manualmente los datos clínicos de una paciente para obtener una predicción inmediata. Ideal para consultas rápidas o revisión de casos específicos.</p>
+            <a href="/form_individual">Ingresar datos</a>
+        </div>
+
+        <div class="card">
+            <h3>Predicción por archivo</h3>
+            <p>Carga un archivo xlsx, .xls, .csv con varios registros para realizar predicciones en masa. Ideal para instituciones médicas y análisis de datos en conjunto.</p>
+            <a href="/form_lote">Subir archivo</a>
+        </div>
+    </div>
+
+</body>
+</html>
